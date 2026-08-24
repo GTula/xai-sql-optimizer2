@@ -1,4 +1,4 @@
-# motor_SQL — Educational and Explainable SQL Engine
+# motor_SQL — Explainable SQL Engine
 
 `motor_SQL` is a relational database prototype written in Python. The project
 covers the complete query-processing pipeline: tokenization, AST construction,
