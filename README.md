@@ -1,4 +1,4 @@
-# motor_SQL — motor SQL educativo y explicable
+# motor_SQL — motor SQL explicable
 
 `motor_SQL` es un prototipo de base de datos relacional escrito en Python. El
 proyecto permite recorrer de punta a punta el procesamiento de una consulta:
