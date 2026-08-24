@@ -1,52 +1,52 @@
-# motor_SQL — motor SQL explicable
+# motor_SQL — Educational and Explainable SQL Engine
 
-`motor_SQL` es un prototipo de base de datos relacional escrito en Python. El
-proyecto permite recorrer de punta a punta el procesamiento de una consulta:
-tokenización, construcción del AST, validación semántica, optimización del orden
-de los `JOIN`, ejecución y persistencia.
+`motor_SQL` is a relational database prototype written in Python. The project
+covers the complete query-processing pipeline: tokenization, AST construction,
+semantic validation, `JOIN` order optimization, execution, and persistence.
 
-Además del motor básico, incluye una línea experimental de investigación sobre
-estimación de cardinalidad y explicabilidad de optimizadores. Compara un orden de
-ejecución básico, un optimizador inspirado en Selinger y una integración de
-BayesCard; la capa XAI analiza por qué se eligió un plan y contrasta sus
-estimaciones con métricas observadas durante la ejecución.
+In addition to the basic engine, it includes an experimental research track on
+cardinality estimation and optimizer explainability. It compares a basic
+execution order, a Selinger-inspired optimizer, and a BayesCard integration. The
+XAI layer analyzes why a plan was selected and compares its estimates with
+metrics observed at runtime.
 
-## Funcionalidades
+## Features
 
-- Parser y validador SQL propios.
-- Ejecución de `SELECT`, `INSERT`, `CREATE TABLE`, `CREATE INDEX` y `ANALYSE`.
-- Consultas con filtros, expresiones booleanas y múltiples `JOIN`.
-- Tipos `INTEGER`, `VARCHAR`, `FLOAT`, `BOOLEAN` y `DATE`.
-- Datos, catálogo, estadísticas e índices persistidos en archivos.
-- Tres estrategias para ordenar joins:
-  - `basic`: conserva el orden escrito en la consulta;
-  - `selinger`: usa programación dinámica, cardinalidades y cantidad de valores
-    distintos (NDV);
-  - `bayes`: usa estimaciones de cardinalidad basadas en BayesCard.
-- Explicaciones locales de planes mediante SHAP, con resumen en lenguaje natural,
-  factores favorables y desfavorables y comparación con el segundo mejor plan.
-- Ejecución instrumentada para comparar features estimadas con features reales.
-- Análisis batch de consultas y persistencia de resultados en CSV y JSON.
+- Custom SQL parser and validator.
+- Execution of `SELECT`, `INSERT`, `CREATE TABLE`, `CREATE INDEX`, and `ANALYSE`.
+- Queries with filters, Boolean expressions, and multiple `JOIN` clauses.
+- Support for `INTEGER`, `VARCHAR`, `FLOAT`, `BOOLEAN`, and `DATE` types.
+- File-based persistence for data, catalog metadata, statistics, and indexes.
+- Three join-ordering strategies:
+  - `basic`: preserves the order written in the query;
+  - `selinger`: uses dynamic programming, cardinalities, and the number of
+    distinct values (NDV);
+  - `bayes`: uses BayesCard-based cardinality estimates.
+- Local plan explanations using SHAP, including a natural-language summary,
+  positive and negative factors, and a comparison with the runner-up plan.
+- Instrumented execution for comparing estimated and observed features.
+- Batch query analysis with CSV and JSON result persistence.
 
-## Flujo de una consulta
+## Query Pipeline
 
 ```text
 SQL
  └─> Tokenizer ─> Parser/AST ─> Validator ─> Optimizer ─> ExecutionEngine
-                           catálogo/estadísticas ↑       └─> tablas CSV
-                                      XAI ────────────────> explicación y trazas
+                             catalog/statistics ↑       └─> CSV tables
+                                        XAI ────────────> explanations and traces
 ```
 
-La clase `Database` es la fachada que conecta estos componentes. Al ejecutar una
-sentencia, `ExecutionEngine` la parsea y valida; en los `SELECT`, el optimizador
-puede reordenar los joins antes de que el motor los ejecute mediante nested loops.
+The `Database` class is the facade that connects these components. When a
+statement is executed, `ExecutionEngine` parses and validates it. For `SELECT`
+queries, the optimizer may reorder joins before the engine executes them using
+nested loops.
 
-## Requisitos e instalación
+## Requirements and Installation
 
-- Python 3.9 o posterior.
-- Se recomienda utilizar un entorno virtual.
+- Python 3.9 or later.
+- A virtual environment is recommended.
 
-En PowerShell:
+Using PowerShell:
 
 ```powershell
 python -m venv .venv
@@ -55,42 +55,42 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-El núcleo del motor usa principalmente la biblioteca estándar. Las dependencias
-de `requirements.txt` se necesitan para BayesCard y los experimentos de XAI. La
-demo que genera gráficos de importancia global también requiere `matplotlib`:
+The core engine mainly uses the Python standard library. The dependencies in
+`requirements.txt` are required for BayesCard and the XAI experiments. The demo
+that generates global feature-importance charts also requires `matplotlib`:
 
 ```powershell
 python -m pip install matplotlib
 ```
 
-## Inicio rápido
+## Quick Start
 
-Ejecutar la prueba del flujo principal:
+Run the main workflow test:
 
 ```powershell
 python .\test_minidb.py
 ```
 
-Ejecutar el ejemplo programático:
+Run the programmatic example:
 
 ```powershell
 python .\main.py example
 ```
 
-Abrir la consola interactiva:
+Open the interactive console:
 
 ```powershell
 python .\main.py repl
 ```
 
-También se puede indicar el nombre lógico de la base:
+You can also provide the logical database name:
 
 ```powershell
-python .\main.py repl mi_base.db
+python .\main.py repl my_database.db
 ```
 
-Dentro de la REPL, cada instrucción debe terminar en `;`. `HELP;` muestra la
-ayuda y `EXIT;` cierra la sesión.
+Inside the REPL, every statement must end with `;`. Use `HELP;` to display help
+and `EXIT;` to close the session.
 
 ```sql
 CREATE TABLE instructor (
@@ -112,52 +112,53 @@ FROM instructor
 WHERE salary > 50000;
 ```
 
-## Uso desde Python
+## Python API
 
 ```python
 from database import Database
 
-with Database("investigacion.db", optimizer_type="selinger") as db:
+with Database("research.db", optimizer_type="selinger") as db:
     db.execute("CREATE TABLE department (id INTEGER, name VARCHAR(50))")
     db.execute("INSERT INTO department VALUES (1, 'Physics')")
     rows = db.execute("SELECT id, name FROM department")
     print(rows)
 ```
 
-`optimizer_type` acepta `basic`, `selinger`, `bayes` o `bayescard`. Ejecutar
-`ANALYSE [tabla]` antes de experimentar con los optimizadores actualiza las
-cardinalidades y los NDV utilizados por sus modelos de costo.
+`optimizer_type` accepts `basic`, `selinger`, `bayes`, or `bayescard`. Running
+`ANALYSE [table]` before experimenting with the optimizers updates the
+cardinalities and NDVs used by their cost models.
 
-## Explicabilidad y experimentos
+## Explainability and Experiments
 
-La carpeta `xai/` trata al optimizador como el objeto a explicar, sin modificar
-su decisión. Para cada consulta con joins puede enumerar planes candidatos,
-extraer features estructurales y de costo, calcular contribuciones SHAP y crear
-una explicación contrastiva entre el plan elegido y su alternativa más cercana.
+The `xai/` package treats the optimizer as the system being explained without
+changing its decisions. For each query containing joins, it can enumerate
+candidate plans, extract structural and cost features, calculate SHAP
+contributions, and produce a contrastive explanation comparing the selected plan
+with its closest alternative.
 
-Los principales experimentos son:
+The main experiments are:
 
 ```powershell
-# Importancia global de features sobre el conjunto de consultas
+# Global feature importance across the query workload
 python .\xai\demo_explainer.py
 
-# Comparación de estimaciones Bayes con trabajo observado en runtime
+# Comparison between Bayes estimates and runtime work
 python .\xai\demo_bayes_runtime_validation.py
 
-# Procesamiento batch de docs/CONSULTAS_100.sql
+# Batch processing of docs/CONSULTAS_100.sql
 python .\xai\demo_batch_analysis.py
 ```
 
-El análisis batch escribe sus resultados en `databases/feature_analysis/`. Entre
-ellos se encuentran features estimadas por plan, trazas reales, un resumen de las
-consultas y metadatos del experimento. La fidelidad se evalúa comparando el
-trabajo estimado y el real, incluyendo q-error y filas intermedias producidas por
-cada join.
+The batch analysis writes its results to `databases/feature_analysis/`. These
+outputs include estimated features for each plan, runtime traces, a query
+summary, and experiment metadata. Fidelity is evaluated by comparing estimated
+and observed work, including q-error and the intermediate rows produced by each
+join.
 
-## Persistencia
+## Persistence
 
-Al abrir `Database("mi_base.db")` se genera esta estructura junto al archivo
-indicado:
+Opening `Database("my_database.db")` creates the following structure next to the
+provided path:
 
 ```text
 databases/
@@ -168,56 +169,54 @@ databases/
 │   ├── indexes.csv
 │   ├── statistics.csv
 │   └── column_stats.csv
-└── mi_base/
-    ├── <tabla>.csv
-    └── <índice>.idx
+└── my_database/
+    ├── <table>.csv
+    └── <index>.idx
 ```
 
-El argumento terminado en `.db` identifica la base, pero los datos se almacenan
-actualmente en esta jerarquía de CSV e índices, no dentro de un único archivo de
-base de datos.
+The `.db` argument identifies the database, but data is currently stored in this
+CSV and index hierarchy rather than inside a single database file.
 
-## Estructura del repositorio
+## Repository Structure
 
-| Ruta | Responsabilidad |
+| Path | Responsibility |
 | --- | --- |
-| `database.py` | Fachada pública del motor. |
-| `sql/` | Tokenizer, parser, AST, validación y optimizadores. |
-| `catalog/` | Metadatos y estadísticas persistidos en CSV. |
-| `executor/` | Ejecución del AST y operadores físicos. |
-| `index/` | Implementación persistente de B-tree. |
-| `bayescard/` | Adaptación del estimador y código de BayesCard. |
-| `xai/` | Features, SHAP, explicaciones, trazas y análisis batch. |
-| `demo_bn_db/` | Dataset pequeño para las demostraciones. |
-| `docs/` | Inventario técnico, notas de explicabilidad y consultas de prueba. |
+| `database.py` | Public facade for the engine. |
+| `sql/` | Tokenizer, parser, AST, validation, and optimizers. |
+| `catalog/` | CSV-based metadata and statistics. |
+| `executor/` | AST execution and physical operators. |
+| `index/` | Persistent B-tree implementation. |
+| `bayescard/` | BayesCard estimator adaptation and source code. |
+| `xai/` | Features, SHAP, explanations, traces, and batch analysis. |
+| `demo_bn_db/` | Small dataset used by the demonstrations. |
+| `docs/` | Technical inventory, explainability notes, and test queries. |
 
-Para un inventario archivo por archivo, consultar
+For a file-by-file inventory, see
 [`docs/DOCUMENTACION_ARCHIVOS.md`](docs/DOCUMENTACION_ARCHIVOS.md).
 
-## Alcance y limitaciones actuales
+## Current Scope and Limitations
 
-Este es un prototipo educativo y de investigación, no un DBMS para producción.
+This is an educational and research prototype, not a production DBMS.
 
-- Las tablas se leen desde CSV y los joins se ejecutan en memoria mediante nested
-  loops; no hay almacenamiento por páginas ni buffer pool.
-- `CREATE INDEX` registra el índice y crea su archivo B-tree, pero todavía no lo
-  carga con las filas existentes ni lo usa como camino de acceso en `SELECT`.
-- El parser contiene estructuras para `UPDATE` y `DELETE`, pero el motor de
-  ejecución aún no implementa esas sentencias.
-- No se soportan actualmente `ORDER BY`, `GROUP BY`, subconsultas ni
-  transacciones.
-- La validación experimental muestra que el modelo Bayes puede asumir filtros
-  aplicados antes que los joins, mientras que el executor actual evalúa `WHERE`
-  después de ellos. Las trazas de runtime existen precisamente para medir esta
-  diferencia.
+- Tables are read from CSV files and joins are executed in memory using nested
+  loops. There is no page-based storage or buffer pool.
+- `CREATE INDEX` registers the index and creates its B-tree file, but it does not
+  yet load existing rows or provide an access path for `SELECT`.
+- The parser defines structures for `UPDATE` and `DELETE`, but the execution
+  engine does not yet implement these statements.
+- `ORDER BY`, `GROUP BY`, subqueries, and transactions are not currently
+  supported.
+- Experimental validation shows that the Bayes model may assume filters are
+  applied before joins, while the current executor evaluates `WHERE` afterward.
+  Runtime traces exist specifically to measure this difference.
 
-## Base académica
+## Academic Background
 
-La integración probabilística toma como referencia **BayesCard: Revitilizing
-Bayesian Frameworks for Cardinality Estimation**, de Ziniu Wu, Amir Shaikhha, Rong
-Zhu, Kai Zeng, Yuxing Han y Jingren Zhou. El artículo propone usar redes
-bayesianas para obtener estimaciones de cardinalidad precisas, interpretables y
-eficientes para optimización de consultas.
+The probabilistic integration is based on **BayesCard: Revitilizing Bayesian
+Frameworks for Cardinality Estimation**, by Ziniu Wu, Amir Shaikhha, Rong Zhu,
+Kai Zeng, Yuxing Han, and Jingren Zhou. The paper proposes using Bayesian
+networks to provide accurate, interpretable, and efficient cardinality estimates
+for query optimization.
 
-- [Artículo en arXiv](https://arxiv.org/abs/2012.14743)
-- [Implementación original de BayesCard](https://github.com/wuziniu/BayesCard)
+- [Paper on arXiv](https://arxiv.org/abs/2012.14743)
+- [Original BayesCard implementation](https://github.com/wuziniu/BayesCard)
